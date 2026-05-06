@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+
+  # ---------------- DATABASE SERVICE ----------------
+  database:
+    image: mysql:5.7   # USING IMAGE because this is a prebuilt official DB container
+    container_name: mysql_db
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: appdb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user123
+
+    volumes:
+      - db_data:/var/lib/mysql
+
+    ports:
+      - "3306:3306"
+
+
+  # ---------------- BACKEND SERVICE ----------------
+  backend:
+
+    # USING BUILD because backend is custom application (code available locally)
+    build: ./backend
+
+    container_name: backend_service
+
+    # DEPENDENCY ORDERING: backend will start ONLY after database starts
+    depends_on:
+      - database
+
+    environment:
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_USER: user
+      DB_PASSWORD: user123
+      DB_NAME: appdb
+
+    ports:
+      - "5000:5000"
+
+
+  # ---------------- FRONTEND SERVICE ----------------
+  frontend:
+
+    # USING BUILD because frontend is custom UI application
+    build: ./frontend
+
+    container_name: frontend_service
+
+    # frontend depends on backend (ensures correct startup flow)
+    depends_on:
+      - backend
+
+    ports:
+      - "3000:3000"
+
+
+# ---------------- VOLUME SECTION ----------------
+volumes:
+  db_data:
